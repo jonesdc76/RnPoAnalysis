@@ -1,0 +1,43 @@
+{
+  gStyle->SetOptFit(1111);
+  double t_tot = 4109.0*3600.0;
+  double n = 5;
+  RP *rp = new RP();
+  TChain *ch = rp->chain;
+  double t_end = 100;
+  ch->Draw(Form("(at-pt)>>h(100,0,100)"),"aE<1.05&&aE>0.62&&aPSD>0.18&&aPSD<0.34&&pEtot<1.15&&pEtot>0.45&&pPSD>0.18&&pPSD<0.34&&az<=1000&&pseg==aseg&&pz<=1000");
+  TH1D *h = (TH1D*)gDirectory->Get("h");
+  h->Sumw2();
+  h->Scale(1/h->GetBinWidth(1)/t_tot);
+  h->SetLineColor(kBlue);
+  h->SetMarkerColor(kBlue);
+  h->SetTitle("Delayed Alpha Time - Prompt Alpha Time");
+  gPad->Update();
+  h->GetXaxis()->SetTitle("#Deltat (ms)");
+  h->GetYaxis()->SetTitle("Rate (Hz/ms)");
+  ch->Draw(Form("(ft-at)>>hfar(100,0,100)"),"aE<1.05&&aE>0.62&&aPSD>0.18&&aPSD<0.34&&fEtot<1.15&&fEtot>0.45&&fPSD>0.18&&fPSD<0.34&&az<=1000&&fseg==aseg&&fz<=1000","goff");
+  TH1D *hfar = (TH1D*)gDirectory->Get("hfar");
+  hfar->Sumw2();
+  hfar->Scale(1/hfar->GetBinWidth(1)/t_tot);
+  hfar->SetLineColor(kMagenta);
+  hfar->SetMarkerColor(kMagenta);
+  hfar->Draw("sames");
+
+  TH1D *hsub = (TH1D*)h->Clone("hsub");
+  hsub->Add(hfar, -1);
+  hsub->SetLineColor(kRed);
+  hsub->SetMarkerColor(kRed);
+  hsub->Draw("sames");
+  gStyle->SetOptFit(1111);
+  new TCanvas;
+  TF1 *f = new TF1("f", "[0]*exp(-x/2.569)+[1]*(3.12/3.57*pow(0.5,x/[2])+0.45/3.57*pow(0.5,x/3960.0))", 1, 100);
+  f->SetParameters(hsub->GetBinContent(2),hsub->GetBinContent(40),145);
+  f->SetParNames("R_{0}","R_{1}","T_{1/2}");
+  hsub->Draw();
+  hsub->Fit(f, "r");
+  gPad->Update();
+  hsub->SetTitle("Accidental Subtracted Delayed Alpha Time - Prompt Alpha Time");
+  hsub->GetXaxis()->SetTitle("#Deltat (ms)");
+  hsub->GetYaxis()->SetTitle("Rate (Hz/ms)");
+  hsub->GetYaxis()->SetRangeUser(0,0.0008);
+}
